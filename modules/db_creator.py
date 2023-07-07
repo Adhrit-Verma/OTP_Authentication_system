@@ -32,13 +32,27 @@ class creator():
         self.con.close()
 
 class check():
-    def __init__(self,phone):
-        ph=int(input(phone))
+    def __init__(self,phone,pasw):
+        self.ph=phone
+        p=pasw
         self.con=connector.connect(host='localhost',port='3306',user='root',password='root')
         self.cur=self.con.cursor()
-        self.cur.execute('Select phone from users where phone = %s',(ph,))
+        self.cur.execute('Select phone from users where phone = %s',(self.ph,))
         result=self.cur.fetchall()
-        if result == ph:
-            return True
+        if self.ph in [row[0] for row in result]:
+            re=self.pass_check(p)
+            return re
         else:
             return False
+    def pass_check(self,p):
+        self.cur.execute('Select password from users where phone= %s',(self.ph,))
+        result=self.cur.fetchall()
+        if result == p:
+            self.cur.close()
+            self.con.close()
+            return True
+        else:
+            self.cur.close()
+            self.con.close()
+            return False
+        

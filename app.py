@@ -37,17 +37,22 @@ def index():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        # Process the login form submission
-        username = request.form.get('username')
-        password = request.form.get('phone')
-        check=db_creator.check(phone=)
+        phone = request.form.get('phone_number')
+        password=request.form.get('password')
+        check=db_creator.check(phone,password)
+
+        if check==True:
+           # Redirect to a home page or dashboard upon successful login
+            return redirect('/home')
+        else:
+            pass
+
 
         # Add your login logic here
         # Validate the username and password
         # Perform authentication
 
-        # Redirect to a home page or dashboard upon successful login
-        return redirect('/home')
+        
 
     # Render the login page for GET requests
     return render_template('login.html')
@@ -73,7 +78,7 @@ def register():
     try:
         user = auth.create_user(phone_number=full_phone_number)
         return redirect(url_for('index', registrationSuccess='true'))
-    except auth.AuthError as e:
+    except firebase_admin.exceptions.FirebaseError as e:
         return 'Registration failed'
 # Run the Flask app
 if __name__ == '__main__':
