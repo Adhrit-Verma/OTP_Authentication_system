@@ -16,6 +16,7 @@ class creator():
     
     def create_db(self):
         self.cur.execute("Create database if not exists Users")
+        self.cur.fetchall()
         print("(Users) Database created successfully")
         self.cur.execute("Use Users")
         return True
@@ -29,3 +30,15 @@ class creator():
         print("Created Table : Users")
         self.cur.close()
         self.con.close()
+
+class check():
+    def __init__(self,phone):
+        ph=int(input(phone))
+        self.con=connector.connect(host='localhost',port='3306',user='root',password='root')
+        self.cur=self.con.cursor()
+        self.cur.execute('Select phone from users where phone = %s',(ph,))
+        result=self.cur.fetchall()
+        if result == ph:
+            return True
+        else:
+            return False
