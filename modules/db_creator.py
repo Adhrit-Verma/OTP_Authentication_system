@@ -40,22 +40,22 @@ class creator:
 
 
 class check:
-    def __init__(self, phone, pasw):
+    def __init__(self, phone, password):
         self.ph = phone
-        p = pasw
-        self.con = connector.connect(host='localhost', port='3306', user='root', password='root',database="users")
+        self.p = password
+        self.con = connector.connect(host='localhost', port='3306', user='root', password='root', database="users")
         self.cur = self.con.cursor()
         self.cur.execute('SELECT phone FROM users WHERE phone = %s', (self.ph,))
         result = self.cur.fetchall()
         if self.ph in [row[0] for row in result]:
-            self.result = self.pass_check(p)
+            self.result = self.pass_check()
         else:
             self.result = False
 
-    def pass_check(self, p):
+    def pass_check(self):
         self.cur.execute('SELECT password FROM users WHERE phone = %s', (self.ph,))
         result = self.cur.fetchall()
-        if result == p:
+        if result[0][0] == self.p:
             self.cur.close()
             self.con.close()
             return True
