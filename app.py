@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for,jsonify
 from modules import db_creator
 from modules.db_creator import check
 import mysql.connector as connector
@@ -39,15 +39,16 @@ def getotp():
     # Verify user credentials from the database
     user_checker = check(number, password)
     if user_checker.get_result():
-        # User credentials are valid, proceed with OTP generation and login
         val = getOTPApi(number)
         (stat, otp) = val
-        otp_validation(number, otp)  # Pass the number and OTP to the validation route
         if stat:
-            return render_template('enterOtp.html')
+            return render_template('enterOtp.html', otp=otp)  # Pass the OTP to the template
+        else:
+            return render_template('login.html', message='Failed to send OTP. Please try again.')
     else:
         # User credentials are invalid, display an error message
         return render_template('login.html', message='Invalid username or password')
+
 
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -86,14 +87,18 @@ def register():
     con.close()
     return render_template('register.html', users=users)
 
+
 @app.route('/validateOTP', methods=['POST'])
 def otp_validation():
     user_otp = request.form['otp']
-    number = request.form['number']
-    if user_otp == request.form['otp']:
-        return render_template('home.html', message='Login Successful!')
+    correct_otp = request.form['correct_otp']  # Access the correct OTP from the form data
+
+    if user_otp == correct_otp:
+        return redirect(url_for('home2'))
     else:
-        return render_template('enterOtp.html', number=number, otp=user_otp, message='Wrong OTP')
+        return render_template('enterOtp.html', otp=correct_otp, message='Wrong OTP')
+
+
 
 def getOTPApi(number):
     account_sid = 'AC651d041e7edef1fd82d5927925640afb'
@@ -109,6 +114,80 @@ def getOTPApi(number):
 
 def generateOTP():
     return random.randrange(10000, 99999)
+
+def get_database_connection():
+    return connector.connect(host='localhost', port='3306', user='root', password='root', database='users')
+
+# Home page
+@app.route('/home2', methods=['GET'])
+def home2():
+    with get_database_connection() as con:
+        cur = con.cursor()
+        cur.execute("SELECT * FROM Users")
+        users = cur.fetchall()
+
+    return render_template('home2.html', username='Adhrit', users=users)
+
+# Get all users
+@app.route('/users', methods=['GET', 'POST'])
+def users():
+    if request.method == 'GET':
+        with get_database_connection() as con:
+            cur = con.cursor()
+            cur.execute("SELECT * FROM Users")
+            users = cur.fetchall()
+
+        return jsonify(users)
+
+    elif request.method == 'POST':
+        username = request.form['username']
+        phone = request.form['phone']
+
+        with get_database_connection() as con:
+            cur = con.cursor()
+            query = "INSERT INTO Users (user_name, phone) VALUES (%s, %s)"
+            values = (username, phone)
+            cur.execute(query, values)
+            con.commit()
+
+        return redirect(url_for('home2'))
+
+# Get, update, or delete a specific user
+@app.route('/users/<int:id>', methods=['GET', 'PUT', 'DELETE'])
+def manage_user(id):
+    if request.method == 'GET':
+        with get_database_connection() as con:
+            cur = con.cursor()
+            cur.execute("SELECT * FROM Users WHERE id = %s", (id,))
+            user = cur.fetchone()
+
+        if user:
+            return jsonify(user)
+        else:
+            return "User not found", 404
+
+    elif request.method == 'PUT':
+        username = request.form['username']
+        phone = request.form['phone']
+
+        with get_database_connection() as con:
+            cur = con.cursor()
+            query = "UPDATE Users SET user_name = %s, phone = %s WHERE id = %s"
+            values = (username, phone, id)
+            cur.execute(query, values)
+            con.commit()
+
+        return jsonify({'message': 'User updated successfully'})
+
+    elif request.method == 'DELETE':
+        with get_database_connection() as con:
+            cur = con.cursor()
+            query = "DELETE FROM Users WHERE id = %s"
+            cur.execute(query, (id,))
+            con.commit()
+
+        return jsonify({'message': 'User deleted successfully'})
+
 
 if __name__ == '__main__':
     app.run()

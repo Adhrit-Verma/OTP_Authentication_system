@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        .user-list {
+            width: 100%;
+            margin: 20px auto;
+            border-collapse: collapse;
+        }
+
+        .user-list th,
+        .user-list td {
+            padding: 8px;
+            border: 1px solid #ccc;
+        }
+
+        .user-list th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+
+        form {
+            display: inline-block;
+        }
+
+        input[type="text"],
+        input[type="submit"] {
+            padding: 8px;
+        }
+
+        input[type="text"] {
+            width: 150px;
+            margin-right: 10px;
+        }
+
+        input[type="submit"] {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        input[type="submit"]:hover {
+            background-color: #45a049;
+        }
+
+        .create-user-form {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Welcome, {{ username }}!</h1>
+
+    <h2>Users List</h2>
+    <table class="user-list">
+        <tr>
+            <th>ID</th>
+            <th>Username</th>
+            <th>Phone Number</th>
+            <th>Actions</th>
+        </tr>
+        {% for user in users %}
+        <tr>
+            <td>{{ user[0] }}</td>
+            <td>{{ user[1] }}</td>
+            <td>{{ user[3] }}</td>
+            <td>
+                <form action="/users/{{ user[0] }}" method="POST">
+                    <input type="hidden" name="_method" value="PUT">
+                    <input type="text" name="username" value="{{ user[1] }}" required>
+                    <input type="text" name="phone" value="{{ user[2] }}" required>
+                    <input type="submit" value="Update">
+                </form>
+                <form action="/users/{{ user[0] }}" method="POST">
+                    <input type="hidden" name="_method" value="DELETE">
+                    <input type="submit" value="Delete">
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+    
+    <div class="create-user-form">
+        <h2>Create New User</h2>
+        <form action="/users" method="POST">
+            <input type="text" name="username" placeholder="Username" required>
+            <input type="text" name="phone" placeholder="Phone Number" required>
+            <input type="submit" value="Create">
+        </form>
+    </div>
+    <script>
+        // Handle form submissions with PUT and DELETE methods
+        const forms = document.querySelectorAll('form');
+        forms.forEach(form => {
+            form.addEventListener('submit', function(event) {
+                const method = form.querySelector('input[name="_method"]').value;
+                if (method === 'PUT' || method === 'DELETE') {
+                    event.preventDefault();
+                    const url = form.action;
+                    const formData = new FormData(form);
+                    fetch(url, {
+                        method: method,
+                        body: formData
+                    })
+                    .then(response => {
+                        if (response.ok) {
+                            location.reload();
+                        } else {
+                            alert('Error occurred while performing the action.');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Error occurred while performing the action.');
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>

@@ -55,7 +55,7 @@ class check:
     def pass_check(self):
         self.cur.execute('SELECT password FROM users WHERE phone = %s', (self.ph,))
         result = self.cur.fetchall()
-        if result[0][0] == self.p:
+        if result and str(result[0][0]) == str(self.p):
             self.cur.close()
             self.con.close()
             return True
@@ -63,6 +63,7 @@ class check:
             self.cur.close()
             self.con.close()
             return False
+
 
     def get_result(self):
         return self.result
