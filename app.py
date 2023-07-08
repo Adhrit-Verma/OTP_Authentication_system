@@ -4,6 +4,7 @@ from modules.db_creator import check
 import mysql.connector as connector
 from twilio.rest import Client
 import random
+import cred
 
 class server_start():
     def __init__(self):
@@ -94,7 +95,7 @@ def otp_validation():
 
 def getOTPApi(number):
     account_sid = 'AC651d041e7edef1fd82d5927925640afb'
-    auth_token = 'c7b00e1a1afeb9fe3c590abc8fe843d6'
+    auth_token = cred.auth()
     client = Client(account_sid, auth_token)
     otp = generateOTP()
     body = "Your OTP is " + str(otp)

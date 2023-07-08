@@ -1,36 +1,78 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Registration Page</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        form {
+            width: 300px;
+            margin: 0 auto;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        input[type="text"],
+        input[type="password"] {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        button[type="submit"] {
+            width: 100%;
+            padding: 8px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button[type="submit"]:hover {
+            background-color: #45a049;
+        }
+    </style>
 </head>
 <body>
-    <h1>Register</h1>
-    <form action="/register" method="POST">
-        <label for="country_code">Country Code:</label>
-        <select id="country_code" name="country_code">
-            <option value="+1">United States (+1)</option>
-            <option value="+91">India (+91)</option>
-            <!-- Add more options for other country codes -->
-        </select>
-        <br><br>
-        <label for="phone_number">Phone Number:</label>
-        <input type="text" id="phone_number" name="phone_number" required>
-        <br><br>
-        <label for="password">Password:</label>
-        <input type="password" id="password" name="password" required>
-        <br><br>
-        <input type="submit" value="Register">
+    <h1>Login</h1>
+    <form action="/getotp" method="post">
+        <div>
+            <label for="number">Enter Mobile Number</label>
+            <br>
+            <input type="text" id="number" name="number" placeholder="+91" required/>
+            <br>
+            <label for="password">Enter Password</label>
+            <br>
+            <input type="password" id="password" name="password" required/>
+            <br>
+            <button type="submit">Get OTP</button>
+            <br>
+            {% if message %}
+                <p>{{ message }}</p>
+            {% endif %}
+        </div>
     </form>
-
-    <script>
-        // Redirect to login page after successful registration
-        const queryString = window.location.search;
-        const urlParams = new URLSearchParams(queryString);
-        const registrationSuccess = urlParams.get('registrationSuccess');
-        if (registrationSuccess === 'true') {
-            alert('Registration successful! Please login.');
-            window.location.href = '/login';
-        }
-    </script>
 </body>
 </html>
+
+
+
+
+
+
+
