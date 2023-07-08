@@ -1,85 +1,111 @@
-from flask import Flask, render_template, request,url_for,redirect
-import firebase_admin
+from flask import Flask, render_template, request, redirect, url_for
 from modules import db_creator
-from firebase_admin import credentials
-from firebase_admin import auth
-import mysql.connector
+from modules.db_creator import check
+import mysql.connector as connector
+from twilio.rest import Client
+import random
 
-# Initialize Flask app
-db = db_creator.creator()
+class server_start():
+    def __init__(self):
+        con = connector.connect(host='localhost', port='3306', user='root', password='root')
+        try:
+            if con.is_connected():
+                target_db = "users"
+                db_checker = db_creator.db_check(target_db)
+                if db_checker.check_exists():
+                    print("Database exists")
+                else:
+                    database = db_creator.creator()
+        except Exception as e:
+            print(e)
+
+s = server_start()
 app = Flask(__name__)
 
-# Initialize Firebase app
-cred = credentials.Certificate('service_firebase.json')
-firebase_admin.initialize_app(cred)
-
-# Initialize MySQL connection
-mysql_connection = mysql.connector.connect(
-    host='localhost',
-    user='root',
-    password='root',
-    database='users'
-)
-
-# Firebase phone number verification
-def verify_phone_number(phone_number):
-    try:
-        user = auth.get_user_by_phone_number(phone_number)
-        return user
-    except auth.AuthError as e:
-        return None
-
-# Flask routes
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return render_template('home.html')
 
-@app.route('/login', methods=['GET', 'POST'])
+@app.route('/login')
 def login():
-    if request.method == 'POST':
-        phone = request.form.get('phone_number')
-        password=request.form.get('password')
-        check=db_creator.check(phone,password)
-
-        if check==True:
-           # Redirect to a home page or dashboard upon successful login
-            return redirect('/home')
-        else:
-            pass
-
-
-        # Add your login logic here
-        # Validate the username and password
-        # Perform authentication
-
-        
-
-    # Render the login page for GET requests
     return render_template('login.html')
 
-
-@app.route('/register', methods=['POST'])
-def register():
-    country_code = request.form['country_code']
-    username = request.form['username']
+@app.route('/getotp', methods=['POST'])
+def getotp():
+    number = request.form['number']
     password = request.form['password']
-    phone_number = request.form['phone_number']
-    full_phone_number = country_code + phone_number
-    
-    # Store user information in MySQL database
-    cursor = mysql_connection.cursor()
-    insert_query = "INSERT INTO users (user_name, password, phone) VALUES (%s, %s, %s)"
-    values = (username, password, full_phone_number)
-    cursor.execute(insert_query, values)
-    mysql_connection.commit()
-    cursor.close()
 
-    # Create user in Firebase Authentication
-    try:
-        user = auth.create_user(phone_number=full_phone_number)
-        return redirect(url_for('index', registrationSuccess='true'))
-    except firebase_admin.exceptions.FirebaseError as e:
-        return 'Registration failed'
-# Run the Flask app
+    # Verify user credentials from the database
+    user_checker = check(number, password)
+    if user_checker.get_result():
+        # User credentials are valid, proceed with OTP generation and login
+        val = getOTPApi(number)
+        (stat, otp) = val
+        otp_validation(number, otp)  # Pass the number and OTP to the validation route
+        if stat:
+            return render_template('enterOtp.html')
+    else:
+        # User credentials are invalid, display an error message
+        return render_template('login.html', message='Invalid username or password')
+
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        phone = request.form['phone']
+
+        try:
+            # Check if the user already exists
+            user_checker = check(phone, password)
+            if user_checker.get_result():
+                return "User already exists with the provided phone number."
+
+            # Insert the new user into the database
+            con = connector.connect(host='localhost', port='3306', user='root', password='root', database='users')
+            cur = con.cursor()
+            query = "INSERT INTO Users (user_name, password, phone) VALUES (%s, %s, %s)"
+            values = (username, password, phone)
+            cur.execute(query, values)
+            con.commit()
+            con.close()
+
+            return redirect(url_for('login'))
+        except connector.Error as e:
+            return f"An error occurred while registering the user: {e}"
+
+    # Fetch the existing users from the database
+    con = connector.connect(host='localhost', port='3306', user='root', password='root', database='users')
+    cur = con.cursor()
+    cur.execute("SELECT * FROM Users")
+    users = cur.fetchall()
+    con.close()
+    return render_template('register.html', users=users)
+
+@app.route('/validateOTP', methods=['POST'])
+def otp_validation():
+    user_otp = request.form['otp']
+    number = request.form['number']
+    if user_otp == request.form['otp']:
+        return render_template('home.html', message='Login Successful!')
+    else:
+        return render_template('enterOtp.html', number=number, otp=user_otp, message='Wrong OTP')
+
+def getOTPApi(number):
+    account_sid = 'AC651d041e7edef1fd82d5927925640afb'
+    auth_token = 'c7b00e1a1afeb9fe3c590abc8fe843d6'
+    client = Client(account_sid, auth_token)
+    otp = generateOTP()
+    body = "Your OTP is " + str(otp)
+    message = client.messages.create(from_='+16183504860', body=body, to=number)
+    if message.sid:
+        return True, otp
+    else:
+        return False
+
+def generateOTP():
+    return random.randrange(10000, 99999)
+
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run()
