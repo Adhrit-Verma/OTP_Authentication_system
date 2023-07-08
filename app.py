@@ -56,6 +56,8 @@ def register():
         username = request.form['username']
         password = request.form['password']
         phone = request.form['phone']
+        cc="+91"
+        phone=cc+phone
 
         try:
             # Check if the user already exists
